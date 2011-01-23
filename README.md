@@ -13,12 +13,11 @@ To run it, you'll need Chicken Scheme, with a couple of Eggs (chicken-install gl
 
 Then, `cd` to this folder, and run (this is what I used, ymmv): `csc clock.scm -LGLU`
 
-Now you can do `./clock` and see it in all its beauty :)
+Now you can do `./clock` (or `./clock -s` for screensaver mode) and see it in all its beauty :)
 
 
 TODO
 ----
 
-* Fullscreen option
 * Use a proper font
 * Sounds?

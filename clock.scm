@@ -4,6 +4,11 @@
 
 (use gl glu glut posix)
 
+; Run in screensaver-mode?
+(define screensaver-mode?
+  (and (> (length (argv)) 1)
+       (string=? (list-ref (argv) 1) "-s")))
+
 ; Puck Direction
 (define dx -4)
 (define dy 3)
@@ -43,6 +48,10 @@
 (define (init)
   (glut:InitWindowSize canvas-w canvas-h)
   (glut:CreateWindow "Pong Clock - Original HTML5 version by The Silvervest Group Labs - Ported by Zane Ashby")
+
+  (when screensaver-mode?
+        (glut:FullScreen)
+        (glut:SetCursor glut:CURSOR_NONE))
 
   (glu:Ortho2D 0 canvas-w canvas-h 0)
 
@@ -165,6 +174,12 @@
 (init)
 
 
+(when screensaver-mode?
+      (glut:PassiveMotionFunc
+       (lambda (x y)
+         (exit))))
+
+
 (glut:DisplayFunc
  (lambda ()
   (gl:Clear gl:COLOR_BUFFER_BIT)
@@ -184,11 +199,17 @@
     (when (= (string-length text-r) 1)
           (set! text-r (format "0~a" text-r)))
 
-    (gl:RasterPos2f (- (/ canvas-w 2) 30)  20)
+    ; Bad hack! This needs to be modified depending on screen res..
+    ; Texture fonts will fix this.
+    (if screensaver-mode?
+        (gl:RasterPos2f (- (/ canvas-w 2) 7)  20)
+        (gl:RasterPos2f (- (/ canvas-w 2) 30)  20))
     (glut:BitmapCharacter glut:BITMAP_HELVETICA_18 (string-ref text-l 0))
     (glut:BitmapCharacter glut:BITMAP_HELVETICA_18 (string-ref text-l 1))
 
-    (gl:RasterPos2f (- (/ canvas-w 2) 0)  20)
+    (if screensaver-mode?
+        (gl:RasterPos2f (+ (/ canvas-w 2) 7)  20)
+        (gl:RasterPos2f (+ (/ canvas-w 2) 0)  20))
     (glut:BitmapCharacter glut:BITMAP_HELVETICA_18 (string-ref text-r 0))
     (glut:BitmapCharacter glut:BITMAP_HELVETICA_18 (string-ref text-r 1)))
   

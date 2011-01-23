@@ -177,12 +177,12 @@
   (draw-rect x y puck-size puck-size)
 
   ; Text rendering
-  (let ((text-l (format "~s" score-l))
-        (text-r (format "~s" score-r)))
+  (let ((text-l (format "~a" score-l))
+        (text-r (format "~a" score-r)))
     (when (= (string-length text-l) 1)
-          (set! text-l (format "0~s" text-l)))
+          (set! text-l (format "0~a" text-l)))
     (when (= (string-length text-r) 1)
-          (set! text-r (format "0~s" text-r)))
+          (set! text-r (format "0~a" text-r)))
 
     (gl:RasterPos2f (- (/ canvas-w 2) 30)  20)
     (glut:BitmapCharacter glut:BITMAP_HELVETICA_18 (string-ref text-l 0))

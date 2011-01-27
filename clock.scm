@@ -9,6 +9,10 @@
   (and (> (length (argv)) 1)
        (string=? (list-ref (argv) 1) "-s")))
 
+; Is first mouse movement?
+; Needed for Win32 because Glut calls PassiveMotionFunc there on startup
+(define *first-motion* #t)
+
 ; Puck Direction
 (define dx -4)
 (define dy 3)
@@ -25,9 +29,7 @@
 (define draw-speed 11)
 (define puck-size 20)
 
-; Timers
-(define draw-timer '())
-(define clock-timer '())
+; Clock Tick Timer
 (define last-seconds 0)
 
 ; Paddles
@@ -45,7 +47,9 @@
 (define inc-m #f)
 
 
+; Initialize Glut and Game stuff
 (define (init)
+  ;(glut:InitDisplayMode glut:DOUBLE)
   (glut:InitWindowSize canvas-w canvas-h)
   (glut:CreateWindow "Pong Clock - Original HTML5 version by The Silvervest Group Labs - Ported by Zane Ashby")
 
@@ -55,7 +59,7 @@
 
   (glu:Ortho2D 0 canvas-w canvas-h 0)
 
-  (set! draw-timer (glut:TimerFunc draw-speed redraw-board 0))
+  (glut:TimerFunc draw-speed redraw-board 0)
 
   (let* ((time (seconds->local-time))
          (time-h (vector-ref time 2))
@@ -65,16 +69,14 @@
     (set! score-l time-h)
     (set! score-r time-m))
 
-  (update-score)
-
   (set! paddle-ly (- (/ canvas-h 2) (/ paddle-h 2)))
   (set! paddle-ry (- (/ canvas-h 2) (/ paddle-h 2)))
 
-  (reset-puck "r"))
+  (reset-puck 'right))
 
 
 ; Clock Tick
-(define (clock-tick user)
+(define (clock-tick)
   (let* ((time (seconds->local-time))
          (time-m (vector-ref time 1))
          (time-s (vector-ref time 0)))
@@ -93,19 +95,17 @@
         (if (and (> y (- paddle-ly puck-size)) (< y (+ paddle-ly paddle-h)))
             (set! dx (- 0 dx))
             (when (< x puck-size)
-                  (reset-puck "l")
-                  (set! score-r (+ score-r 1))
-                  (update-score))))
+                  (reset-puck 'left)
+                  (set! score-r (+ score-r 1)))))
 
   ; Hits the right side
   (when (>= (+ x dx) (- (- canvas-w paddle-w) puck-size))
         (if (and (> y (- paddle-ry puck-size)) (< y (+ paddle-ry paddle-h)))
             (set! dx (- 0 dx))
             (when (> x (- canvas-w puck-size))
-                  (reset-puck "r")
+                  (reset-puck 'right)
                   (set! score-l (+ score-l 1))
-                  (set! score-r 0)
-                  (update-score))))
+                  (set! score-r 0))))
 
   ; Move the puck
   (set! x (+ x dx))
@@ -132,13 +132,14 @@
   (when (>= paddle-ly (- canvas-h paddle-h)) (set! paddle-ly (- canvas-h paddle-h 1)))
   (when (>= paddle-ry (- canvas-h paddle-h)) (set! paddle-ry (- canvas-h paddle-h 1)))
 
+  ; This is a hack since I think I can only use a single glut timer at a time
   (when (not (= (current-seconds) last-seconds))
-        (clock-tick 0)
+        (clock-tick)
         (set! last-seconds (current-seconds)))
   
-  (glut:PostRedisplay)
+  (glut:PostRedisplay) ; Tell Glut to redraw window
 
-  (set! draw-timer (glut:TimerFunc draw-speed redraw-board 0)))
+  (glut:TimerFunc draw-speed redraw-board 0))
 
 
 ; Reset puck onto winners paddle
@@ -146,7 +147,7 @@
   (set! inc-h #f)
   (set! inc-m #f)
   (set! dx dx-reset)
-  (if (string=? side "r")
+  (if (eq? side 'right)
       (begin
         (set! x (+ paddle-w puck-size))
         (set! y (+ paddle-ly (/ paddle-h 2))))
@@ -154,11 +155,6 @@
         (set! x (- canvas-w (+ paddle-w puck-size)))
         (set! y (+ paddle-ry (/ paddle-h 2))))))
   
-
-; Update score text
-(define (update-score)
-  #t) ; Oops, this is a no-op
-
 
 ; Draw rectangle
 (define (draw-rect x y w h)
@@ -171,15 +167,20 @@
   (gl:End))
 
 
+; Initialize Glut Window and Game
 (init)
 
 
+; If screensaver-mode? then check for mouse movement
 (when screensaver-mode?
       (glut:PassiveMotionFunc
        (lambda (x y)
-         (exit))))
+         (if (not *first-motion*)
+             (exit)
+             (set! *first-motion* #f)))))
 
 
+; This draws the scene
 (glut:DisplayFunc
  (lambda ()
   (gl:Clear gl:COLOR_BUFFER_BIT)
@@ -213,6 +214,7 @@
     (glut:BitmapCharacter glut:BITMAP_HELVETICA_18 (string-ref text-r 0))
     (glut:BitmapCharacter glut:BITMAP_HELVETICA_18 (string-ref text-r 1)))
   
+;  (glut:SwapBuffers)
   (gl:Flush)))
 
 
